@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Heart, MessageCircle, Book, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const BACKEND = process.env.BACKEND_URL || 'http://localhost:5000'; 
+
 const CounsellingApp = () => {
   const [messages, setMessages] = useState([
     {
@@ -40,7 +42,7 @@ const CounsellingApp = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/chat', {
+      const response = await fetch(`${BACKEND}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage.content, history: messages }),
