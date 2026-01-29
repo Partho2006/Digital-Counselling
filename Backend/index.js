@@ -272,14 +272,19 @@ app.get("/api/status", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🤖 AI Counselling Server is running on http://localhost:${PORT}`);
-  console.log(`📡 Ready to accept requests at /api/chat`);
-  console.log(`🔑 Groq API Key: ${process.env.GROQ_API_KEY ? '✓ Configured' : '✗ Missing'}`);
-  console.log(`⚡ Model: llama-3.3-70b-versatile (with llama-3.1-8b-instant fallback)`);
-  console.log(`💰 Cost: FREE (No credit card required!)`);
-});
+// Export for Vercel serverless
+export default app;
 
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🤖 AI Counselling Server is running on http://localhost:${PORT}`);
+    console.log(`📡 Ready to accept requests at /api/chat`);
+    console.log(`🔑 Groq API Key: ${process.env.GROQ_API_KEY ? '✓ Configured' : '✗ Missing'}`);
+    console.log(`⚡ Model: llama-3.3-70b-versatile (with llama-3.1-8b-instant fallback)`);
+    console.log(`💰 Cost: FREE (No credit card required!)`);
+  });
+}
 
 process.on("uncaughtException", (error) => {
   console.error("❌ Uncaught Exception:", error);
