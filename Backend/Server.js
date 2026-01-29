@@ -66,7 +66,6 @@ const isCrisisMessage = (message) => {
   );
 };
 
-// Rate limiting helper (simple in-memory store)
 const requestCounts = new Map();
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 20;
@@ -75,11 +74,10 @@ const checkRateLimit = (identifier) => {
   const now = Date.now();
   const userRequests = requestCounts.get(identifier) || [];
   
-  // Remove old requests outside the window
   const recentRequests = userRequests.filter(time => now - time < RATE_LIMIT_WINDOW);
   
   if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
-    return false; // Rate limit exceeded
+    return false; 
   }
   
   recentRequests.push(now);
@@ -91,7 +89,6 @@ app.post("/api/chat", async (req, res) => {
   try {
     const { message, history } = req.body;
 
-    // Input validation
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return res.status(400).json({ error: "Valid message is required" });
     }
@@ -100,7 +97,6 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "Message is too long. Please keep it under 2000 characters." });
     }
 
-    // Simple rate limiting based on IP
     const clientIp = req.ip || req.connection.remoteAddress;
     if (!checkRateLimit(clientIp)) {
       return res.status(429).json({ 
@@ -110,11 +106,10 @@ app.post("/api/chat", async (req, res) => {
 
     const crisis = isCrisisMessage(message);
 
-    // Prepare conversation history (limit to last 10 messages to manage context)
     const conversationHistory = Array.isArray(history) 
       ? history.slice(-10).map((m) => ({
           role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: String(m.content || '').slice(0, 1000) // Limit each message
+          content: String(m.content || '').slice(0, 1000) 
         }))
       : [];
 
@@ -125,18 +120,18 @@ app.post("/api/chat", async (req, res) => {
     ];
 
     let completion;
-    let modelUsed = "llama-3.3-70b-versatile"; // Default model
+    let modelUsed = "llama-3.3-70b-versatile"; 
 
     try {
       completion = await groq.chat.completions.create({
-        model: "llama-3.3-70b-versatile", // Best free model on Groq
+        model: "llama-3.3-70b-versatile", 
         messages,
         temperature: 0.7,
         max_tokens: 800,
         top_p: 0.9,
       });
     } catch (err) {
-      // Fallback to smaller model if rate limited
+
       if (err.status === 429 || err.code === 'rate_limit_exceeded') {
         console.warn("Rate limited on llama-3.3-70b, falling back to llama-3.1-8b");
         modelUsed = "llama-3.1-8b-instant";
@@ -155,7 +150,6 @@ app.post("/api/chat", async (req, res) => {
 
     let response = completion.choices[0].message.content;
 
-    // Add crisis resources if needed
     if (crisis) {
       response += "\n\n🚨 **URGENT - IMMEDIATE HELP AVAILABLE**:\n\n" +
                   "If you're in immediate danger or having thoughts of self-harm, please reach out RIGHT NOW:\n\n" +
@@ -173,7 +167,6 @@ app.post("/api/chat", async (req, res) => {
                   "Your life has value, and there are people who want to help you. Please reach out.";
     }
 
-    // Return response with metadata
     res.json({ 
       response, 
       isCrisis: crisis,
@@ -184,7 +177,6 @@ app.post("/api/chat", async (req, res) => {
   } catch (error) {
     console.error("Groq API Error:", error);
 
-    // Detailed error handling
     if (error.status === 401 || error.code === 'invalid_api_key') {
       return res.status(500).json({ 
         error: "API authentication failed. Please contact support." 
@@ -209,7 +201,6 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
-    // Generic error for anything else
     res.status(500).json({ 
       error: "Unable to process your request at this time. Please try again." 
     });
@@ -227,7 +218,7 @@ app.get("/health", (req, res) => {
 
 app.get("/api/suggestions", (req, res) => {
   const suggestions = [
-    // General Student Concerns
+
     "I'm feeling stressed about my upcoming exams",
     "I'm struggling with time management",
     "I feel lonely and isolated at university",
@@ -245,19 +236,16 @@ app.get("/api/suggestions", (req, res) => {
     "I'm confused about which tech career path to choose",
     "I'm experiencing burnout from constant coding",
     
-    // Medical Student Specific
     "Medical school is extremely overwhelming",
     "I'm preparing for NEET and feeling the pressure",
     "Clinical rotations are emotionally draining",
     "I'm confused about which medical specialization to pursue",
-    
-    // High School Student Specific
+
     "I'm stressed about board exams (10th/12th)",
     "I don't know which stream to choose after 10th",
     "I'm preparing for JEE/NEET and feeling anxious",
     "I'm confused about my future career options",
     
-    // Common Issues
     "I feel like I'm not good enough (imposter syndrome)",
     "I'm dealing with family pressure about my career",
     "A friend is doing better than me and I feel discouraged",
@@ -268,7 +256,6 @@ app.get("/api/suggestions", (req, res) => {
   res.json({ suggestions });
 });
 
-// Endpoint to check API status
 app.get("/api/status", (req, res) => {
   res.json({
     status: "operational",
@@ -293,17 +280,15 @@ app.listen(PORT, () => {
   console.log(`💰 Cost: FREE (No credit card required!)`);
 });
 
-// Enhanced error handling
+
 process.on("uncaughtException", (error) => {
   console.error("❌ Uncaught Exception:", error);
-  // Don't exit the process in production, just log it
 });
 
 process.on("unhandledRejection", (error) => {
   console.error("❌ Unhandled Rejection:", error);
 });
 
-// Graceful shutdown
 process.on("SIGTERM", () => {
   console.log("📴 SIGTERM received, shutting down gracefully...");
   process.exit(0);
