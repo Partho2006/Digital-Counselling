@@ -237,7 +237,6 @@ app.get("/api/suggestions", (req, res) => {
     "I feel overwhelmed by my coursework",
     "I'm having conflicts with my roommate",
     
-    // Engineering/CS Specific
     "I'm struggling with coding and debugging",
     "I want to participate in hackathons but don't know where to start",
     "I'm preparing for GATE exam and feeling overwhelmed",
@@ -281,10 +280,8 @@ app.get("/api/status", (req, res) => {
   });
 });
 
-// Export for Vercel serverless
 export default app;
 
-// For local development
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`🤖 AI Counselling Server is running on http://localhost:${PORT}`);
