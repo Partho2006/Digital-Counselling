@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -8,13 +8,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error("ERROR: OPENAI_API_KEY is not set in environment variables");
+if (!process.env.GROQ_API_KEY) {
+  console.error("ERROR: GROQ_API_KEY is not set in environment variables");
   process.exit(1);
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 app.use(cors());
@@ -125,31 +125,27 @@ app.post("/api/chat", async (req, res) => {
     ];
 
     let completion;
-    let modelUsed = "gpt-4o"; // Using the latest model
+    let modelUsed = "llama-3.3-70b-versatile"; // Default model
 
     try {
-      completion = await openai.chat.completions.create({
-        model: "gpt-4o", // Updated to latest model
+      completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile", // Best free model on Groq
         messages,
         temperature: 0.7,
-        max_tokens: 800, // Increased for more detailed responses
-        presence_penalty: 0.6,
-        frequency_penalty: 0.3,
+        max_tokens: 800,
         top_p: 0.9,
       });
     } catch (err) {
-      // Fallback to gpt-4o-mini if gpt-4o is not available
-      if (err.code === "model_not_found" || err.status === 404) {
-        console.warn("GPT-4o unavailable, falling back to gpt-4o-mini");
-        modelUsed = "gpt-4o-mini";
+      // Fallback to smaller model if rate limited
+      if (err.status === 429 || err.code === 'rate_limit_exceeded') {
+        console.warn("Rate limited on llama-3.3-70b, falling back to llama-3.1-8b");
+        modelUsed = "llama-3.1-8b-instant";
         
-        completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
+        completion = await groq.chat.completions.create({
+          model: "llama-3.1-8b-instant",
           messages,
           temperature: 0.7,
           max_tokens: 800,
-          presence_penalty: 0.6,
-          frequency_penalty: 0.3,
           top_p: 0.9,
         });
       } else {
@@ -186,7 +182,7 @@ app.post("/api/chat", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("OpenAI API Error:", error);
+    console.error("Groq API Error:", error);
 
     // Detailed error handling
     if (error.status === 401 || error.code === 'invalid_api_key') {
@@ -225,7 +221,7 @@ app.get("/health", (req, res) => {
     status: "OK", 
     message: "AI Counselling server is running",
     timestamp: new Date().toISOString(),
-    service: "OpenAI GPT-4o"
+    service: "Groq LLaMA 3.3 70B"
   });
 });
 
@@ -276,8 +272,8 @@ app.get("/api/suggestions", (req, res) => {
 app.get("/api/status", (req, res) => {
   res.json({
     status: "operational",
-    openai: {
-      configured: !!process.env.OPENAI_API_KEY,
+    groq: {
+      configured: !!process.env.GROQ_API_KEY,
       ready: true
     },
     features: {
@@ -292,8 +288,9 @@ app.get("/api/status", (req, res) => {
 app.listen(PORT, () => {
   console.log(`🤖 AI Counselling Server is running on http://localhost:${PORT}`);
   console.log(`📡 Ready to accept requests at /api/chat`);
-  console.log(`🔑 OpenAI API Key: ${process.env.OPENAI_API_KEY ? '✓ Configured' : '✗ Missing'}`);
-  console.log(`⚡ Model: gpt-4o (with gpt-4o-mini fallback)`);
+  console.log(`🔑 Groq API Key: ${process.env.GROQ_API_KEY ? '✓ Configured' : '✗ Missing'}`);
+  console.log(`⚡ Model: llama-3.3-70b-versatile (with llama-3.1-8b-instant fallback)`);
+  console.log(`💰 Cost: FREE (No credit card required!)`);
 });
 
 // Enhanced error handling
