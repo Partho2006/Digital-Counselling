@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Heart, MessageCircle, Book, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const BACKEND = process.env.BACKEND_URL || 'http://localhost:5000'; 
+const BACKEND =  'http://localhost:3001';
 
 const CounsellingApp = () => {
   const [messages, setMessages] = useState([
